@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle Management System</title>
+
+<style>
+body{
+    font-family: Arial;
+    background: linear-gradient(120deg,#dff9fb,#f6e58d);
+    margin:0;
+}
+#container{
+    width:98%;
+    margin:15px auto;
+    background:#fff;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+}
+h2,h3{text-align:center;color:#2c3e50;}
+input,select,button{
+    margin:4px;
+    padding:6px;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+button{
+    background:#0984e3;
+    color:#fff;
+    cursor:pointer;
+}
+button:hover{background:#0652dd;}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    font-size:13px;
+}
+th,td{
+    border:1px solid #ddd;
+    padding:5px;
+    text-align:center;
+}
+th{background:#0984e3;color:#fff;}
+.card-box{
+    display:flex;
+    justify-content:space-around;
+    flex-wrap:wrap;
+}
+.card{
+    background:#f1f2f6;
+    width:190px;
+    margin:8px;
+    padding:12px;
+    border-radius:10px;
+    text-align:center;
+    box-shadow:0 0 8px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+
+<body>
+<div id="container">
+
+<h2>Vehicle Management System</h2>
+
+<!-- LOGIN -->
+<div id="loginDiv" style="text-align:center;">
+<input id="username" value="admin">
+<input id="password" type="password" value="1234">
+<button onclick="login()">Login</button>
+</div>
+
+<!-- MAIN -->
+<div id="mainDiv" style="display:none;">
+
+<h3>Data Entry</h3>
+
+<input type="date" id="date">
+<input id="empId" placeholder="Employee ID">
+<input id="empName" placeholder="Employee Name">
+<input id="tokenId" placeholder="Token ID">
+<input id="agency" placeholder="Agency Name">
+<input id="vehicleNo" placeholder="Vehicle Number">
+<input id="driver" placeholder="Driver Name">
+<input id="partyName" placeholder="Party Name">
+<input id="destination" placeholder="Destination">
+
+<select id="vehicleType">
+<option value="">Select Vehicle</option>
+<option>Lorry</option>
+<option>Covered Van</option>
+<option>Picup-Van</option>
+</select>
+
+<input id="fridge" type="number" placeholder="Fridge">
+<input id="ac" type="number" placeholder="AC">
+<input id="arrangeTime" type="time" placeholder="Arrange Time (HH:MM)">
+<input id="loadingTime" placeholder="Loading Time (Min)" readonly>
+<input id="submitTime" placeholder="Submit Time (HH:MM)" readonly>
+<input id="durationTime" placeholder="Duration (Min)" readonly>
+
+<br>
+<button onclick="addData()">Submit</button>
+<button onclick="clearAllData()">Clear All</button>
+
+<!-- SUMMARY -->
+<div class="card-box">
+<div class="card"><h4>Daily Fridge</h4><p id="dailyFridge">0</p></div>
+<div class="card"><h4>Daily AC</h4><p id="dailyAC">0</p></div>
+
+<div class="card"><h4>Monthly Fridge</h4><p id="monthlyFridge">0</p></div>
+<div class="card"><h4>Monthly AC</h4><p id="monthlyAC">0</p></div>
+
+<div class="card"><h4>Lorry Count</h4><p id="lorryCount">0</p></div>
+<div class="card"><h4>Covered Van Count</h4><p id="coveredVanCount">0</p></div>
+<div class="card"><h4>Picup-Van Count</h4><p id="picupVanCount">0</p></div>
+
+<div class="card"><h4>Total Vehicle Load</h4><p id="totalVehicleCount">0</p></div>
+
+<div class="card"><h4>Total Duration (Min)</h4><p id="totalDuration">0</p></div>
+</div>
+
+<!-- TABLE -->
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Emp ID</th>
+<th>Employee</th>
+<th>Token</th>
+<th>Agency</th>
+<th>Vehicle No</th>
+<th>Driver</th>
+<th>Party</th>
+<th>Destination</th>
+<th>Vehicle</th>
+<th>Fridge</th>
+<th>AC</th>
+<th>Total</th>
+<th>Loading</th>
+<th>Submit</th>
+<th>Duration</th>
+<th>Edit</th>
+<th>Delete</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+</div>
+</div>
+
+<script>
+let allData=[], userRole="";
+
+function login(){
+    if((username.value==="admin"||username.value==="user") && password.value==="1234"){
+        userRole=username.value;
+        loginDiv.style.display="none";
+        mainDiv.style.display="block";
+        loadData();
+    }else alert("Wrong Login");
+}
+
+function saveData(){
+    localStorage.setItem("vehicleData",JSON.stringify(allData));
+}
+
+function loadData(){
+    let d=localStorage.getItem("vehicleData");
+    if(d){
+        allData=JSON.parse(d);
+        renderTable();
+        calculateTotals();
+    }
+}
+
+function getLoading(v){
+    if(v==="Lorry") return 40;
+    if(v==="Covered Van") return 20;
+    if(v==="Picup-Van") return 20;
+    return 0;
+}
+
+function toMin(t){
+    if(!t) return 0;
+    let p=t.split(":");
+    if(p.length<2) return 0;
+    return (+p[0])*60 + (+p[1]);
+}
+
+function addData(){
+    if(!date.value||!vehicleType.value||!arrangeTime.value){
+        alert("Required fields missing");
+        return;
+    }
+
+    let load=getLoading(vehicleType.value);
+    loadingTime.value=load;
+
+    let now=new Date();
+    let submit=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+    submitTime.value = submit;
+
+    let dur=toMin(submit)-toMin(arrangeTime.value);
+    if(dur<0) dur+=1440;
+    durationTime.value=dur;
+
+    allData.push({
+        date:date.value,
+        arrangeTime:arrangeTime.value,
+        empId:empId.value,
+        emp:empName.value,
+        token:tokenId.value,
+        agency:agency.value,
+        vehicleNo:vehicleNo.value,
+        driver:driver.value,
+        party:partyName.value,
+        destination:destination.value,
+        vehicle:vehicleType.value,
+        fridge:+fridge.value||0,
+        ac:+ac.value||0,
+        total:(+fridge.value||0)+(+ac.value||0),
+        loading:load,
+        submit:submit,
+        duration:dur
+    });
+
+    saveData();
+    renderTable();
+    calculateTotals();
+
+    // শুধু mainDiv ইনপুট ক্লিয়ার
+    document.querySelectorAll("#mainDiv input").forEach(i=>i.value="");
+    document.querySelectorAll("#mainDiv select").forEach(s=>s.selectedIndex=0);
+}
+
+function renderTable(){
+    tableBody.innerHTML="";
+    allData.forEach((r,i)=>{
+        tableBody.innerHTML+=`
+        <tr>
+        <td>${r.date}</td>
+        <td>${r.empId}</td>
+        <td>${r.emp}</td>
+        <td>${r.token}</td>
+        <td>${r.agency}</td>
+        <td>${r.vehicleNo}</td>
+        <td>${r.driver}</td>
+        <td>${r.party}</td>
+        <td>${r.destination}</td>
+        <td>${r.vehicle}</td>
+        <td>${r.fridge}</td>
+        <td>${r.ac}</td>
+        <td>${r.total}</td>
+        <td>${r.loading}</td>
+        <td>${r.submit}</td>
+        <td>${r.duration}</td>
+        <td>${userRole==="admin"?`<button onclick="edit(${i})">Edit</button>`:"-"}</td>
+        <td>${userRole==="admin"?`<button onclick="del(${i})">Del</button>`:"-"}</td>
+        </tr>`;
+    });
+}
+
+function edit(i){
+    let r=allData[i];
+    date.value=r.date;
+    arrangeTime.value=r.arrangeTime||"";
+    empId.value=r.empId;
+    empName.value=r.emp;
+    tokenId.value=r.token;
+    agency.value=r.agency;
+    vehicleNo.value=r.vehicleNo;
+    driver.value=r.driver;
+    partyName.value=r.party;
+    destination.value=r.destination;
+    vehicleType.value=r.vehicle;
+    fridge.value=r.fridge;
+    ac.value=r.ac;
+    allData.splice(i,1);
+    saveData();
+    renderTable();
+}
+
+function del(i){
+    if(confirm("Delete?")){
+        allData.splice(i,1);
+        saveData();
+        renderTable();
+        calculateTotals();
+    }
+}
+
+function calculateTotals(){
+    let today=new Date().toLocaleDateString('en-CA');
+    let month=today.slice(0,7);
+
+    let dF=0,dA=0,mF=0,mA=0;
+    let l=0,c=0,p=0;
+    let dur=0;
+
+    allData.forEach(r=>{
+        if(r.date===today){
+            dF+=r.fridge;
+            dA+=r.ac;
+        }
+        if(r.date.startsWith(month)){
+            mF+=r.fridge;
+            mA+=r.ac;
+        }
+        if(r.vehicle==="Lorry") l++;
+        if(r.vehicle==="Covered Van") c++;
+        if(r.vehicle==="Picup-Van") p++;
+        dur+=r.duration;
+    });
+
+    dailyFridge.innerText=dF;
+    dailyAC.innerText=dA;
+    monthlyFridge.innerText=mF;
+    monthlyAC.innerText=mA;
+
+    lorryCount.innerText=l;
+    coveredVanCount.innerText=c;
+    picupVanCount.innerText=p;
+    totalVehicleCount.innerText=l+c+p;
+
+    totalDuration.innerText=dur;
+}
+
+function clearAllData(){
+    if(confirm("All data clear?")){
+        localStorage.removeItem("vehicleData");
+        allData=[];
+        renderTable();
+        calculateTotals();
+    }
+}
+</script>
+
+</body>
+</html>
