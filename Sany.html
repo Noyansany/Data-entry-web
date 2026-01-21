@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Employee Work Report</title>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to right, #e0f7fa, #ffffff);
+    padding: 20px;
+}
+
+h2,h3 {
+    text-align: center;
+    color: #00796b;
+    text-shadow: 1px 1px 2px #b2dfdb;
+}
+
+input, select, button {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 5px;
+    border: 1px solid #b2dfdb;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #00796b;
+    box-shadow: 0 0 5px #00796b;
+}
+
+button {
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.add { background-color: #4caf50; }
+.add:hover { background-color: #45a049; }
+
+.edit { background-color: #2196f3; }
+.edit:hover { background-color: #0b7dda; }
+
+.delete { background-color: #f44336; }
+.delete:hover { background-color: #da190b; }
+
+.print { background-color: #607d8b; }
+.print:hover { background-color: #455a64; }
+
+.export { background-color: #ff9800; color:black; }
+.export:hover { background-color: #fb8c00; }
+
+.filter { background-color: #00bcd4; }
+.filter:hover { background-color: #0097a7; }
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    background-color: #ffffffcc;
+    border-radius: 5px;
+}
+
+th, td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #b2dfdb;
+    white-space: nowrap;
+}
+
+th {
+    background: linear-gradient(to bottom, #00796b, #004d40);
+    color: white;
+}
+
+td {
+    background-color: #e0f2f1;
+}
+
+tr:nth-child(even) td {
+    background-color: #b2dfdbcc;
+}
+
+tr:hover td {
+    background-color: #80cbc4cc;
+}
+
+.top1 { background-color: #ffd700cc; font-weight: bold; } /* Gold */
+.top2 { background-color: #c0c0c0cc; font-weight: bold; } /* Silver */
+.top3 { background-color: #cd7f32cc; font-weight: bold; } /* Bronze */
+
+@media print {
+    button, input, select { display: none; }
+}
+</style>
+</head>
+<body>
+
+<h2>Employee Work Report</h2>
+
+<b>Date:</b> <input type="date" id="dateInput">
+<input id="eid" placeholder="Employee ID">
+<input id="name" placeholder="Name">
+<input id="desig" placeholder="Designation">
+
+<select id="shift">
+    <option value="Day">Day</option>
+    <option value="Evening">Evening</option>
+    <option value="Night">Night</option>
+</select>
+
+<select id="delivery">
+    <option value="Yes">Delivery Yes</option>
+    <option value="No">Delivery No</option>
+</select>
+
+<input id="fridge" type="number" placeholder="Fridge">
+<input id="ac" type="number" placeholder="AC">
+<input id="vehicle" type="number" placeholder="Vehicle">
+
+<button class="add" onclick="addOrUpdate()">Add / Update</button>
+<button class="print" onclick="window.print()">Print / PDF</button>
+<button class="export" onclick="exportExcel()">Export Excel</button>
+
+<h3>Filter Options</h3>
+<b>Start Date:</b> <input type="date" id="startDate">
+<b>End Date:</b> <input type="date" id="endDate">
+<b>Shift:</b>
+<select id="filterShift">
+    <option value="All">All Shifts</option>
+    <option value="Day">Day</option>
+    <option value="Evening">Evening</option>
+    <option value="Night">Night</option>
+</select>
+<b>Month:</b>
+<select id="filterMonth">
+    <option value="All">All Months</option>
+    <option value="1">January</option>
+    <option value="2">February</option>
+    <option value="3">March</option>
+    <option value="4">April</option>
+    <option value="5">May</option>
+    <option value="6">June</option>
+    <option value="7">July</option>
+    <option value="8">August</option>
+    <option value="9">September</option>
+    <option value="10">October</option>
+    <option value="11">November</option>
+    <option value="12">December</option>
+</select>
+<button class="filter" onclick="applyFilter()">Filter</button>
+<button class="filter" onclick="clearFilter()">Clear Filter</button>
+
+<h3>Daily Report</h3>
+<div class="table-wrapper">
+<table id="dailyTable">
+<thead>
+<tr>
+<th>SL</th><th>Date</th><th>Shift</th><th>Emp ID</th><th>Name</th><th>Designation</th>
+<th>Delivery</th><th>Fridge</th><th>AC</th><th>Vehicle</th><th>Daily Total</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="reportBody"></tbody>
+<tfoot>
+<tr>
+<th colspan="7">Grand Total</th>
+<th id="dailyGrandFridge">0</th>
+<th id="dailyGrandAC">0</th>
+<th id="dailyGrandVehicle">0</th>
+<th id="dailyGrandTotal">0</th>
+<th></th>
+</tr>
+</tfoot>
+</table>
+</div>
+
+<h3>Monthly Summary</h3>
+<div class="table-wrapper">
+<table id="summaryTable">
+<thead>
+<tr>
+<th>SL</th><th>Emp ID</th><th>Name</th>
+<th>Fridge Total</th><th>AC Total</th><th>Vehicle Total</th><th>Monthly Total</th>
+</tr>
+</thead>
+<tbody id="summaryBody"></tbody>
+<tfoot>
+<tr>
+<th colspan="3">Grand Total</th>
+<th id="grandFridge">0</th>
+<th id="grandAC">0</th>
+<th id="grandVehicle">0</th>
+<th id="grandMonthly">0</th>
+</tr>
+</tfoot>
+</table>
+</div>
+
+<h3>Top 3 Performers (Monthly Total)</h3>
+<div class="table-wrapper">
+<table id="top3Table">
+<thead>
+<tr>
+<th>Rank</th><th>Emp ID</th><th>Name</th>
+<th>Fridge Total</th><th>AC Total</th><th>Vehicle Total</th><th>Monthly Total</th>
+</tr>
+</thead>
+<tbody id="top3Body"></tbody>
+</table>
+</div>
+
+<script>
+let count=1, editRow=null;
+let employees = JSON.parse(localStorage.getItem("employeeData") || "[]");
+refreshTables(employees);
+
+function addOrUpdate() {
+    let dateVal=document.getElementById("dateInput").value.trim();
+    let eid=document.getElementById("eid").value.trim();
+    let name=document.getElementById("name").value.trim();
+    let desig=document.getElementById("desig").value.trim();
+    let shift=document.getElementById("shift").value;
+    let delivery=document.getElementById("delivery").value;
+    let fridge=Number(document.getElementById("fridge").value);
+    let ac=Number(document.getElementById("ac").value);
+    let vehicle=Number(document.getElementById("vehicle").value);
+
+    if(!dateVal || !eid || !name || !desig){
+        alert("Date, Employee ID, Name, Designation are required");
+        return;
+    }
+
+    let empObj = {date: dateVal, shift, eid, name, desig, delivery, fridge, ac, vehicle};
+
+    if(editRow===null){
+        employees.push(empObj);
+    } else {
+        let index=editRow.dataset.index;
+        employees[index] = empObj;
+        editRow=null;
+    }
+
+    localStorage.setItem("employeeData", JSON.stringify(employees));
+    clearForm();
+    refreshTables(employees);
+}
+
+function clearForm(){
+    document.getElementById("dateInput").value="";
+    document.getElementById("eid").value="";
+    document.getElementById("name").value="";
+    document.getElementById("desig").value="";
+    document.getElementById("shift").value="Day";
+    document.getElementById("delivery").value="Yes";
+    document.getElementById("fridge").value="";
+    document.getElementById("ac").value="";
+    document.getElementById("vehicle").value="";
+}
+
+function refreshTables(data){
+    count=1;
+    populateDaily(data);
+    populateSummary(data);
+}
+
+function populateDaily(data){
+    let tbody=document.getElementById("reportBody");
+    tbody.innerHTML="";
+    let dailyTotals = data.map(emp => ({...emp, dailyTotal: emp.fridge + emp.ac + emp.vehicle}));
+    let top3Daily = [...dailyTotals].sort((a,b)=>b.dailyTotal - a.dailyTotal).slice(0,3);
+
+    let grandFr = 0, grandAc = 0, grandVeh = 0, grandTotal = 0;
+
+    data.forEach((emp,index)=>{
+        let row=tbody.insertRow();
+        row.dataset.index=index;
+        let dailyTotal = emp.fridge + emp.ac + emp.vehicle;
+
+        grandFr += emp.fridge;
+        grandAc += emp.ac;
+        grandVeh += emp.vehicle;
+        grandTotal += dailyTotal;
+
+        row.innerHTML=`<td>${index+1}</td><td>${emp.date}</td><td>${emp.shift}</td>
+        <td>${emp.eid}</td><td>${emp.name}</td><td>${emp.desig}</td>
+        <td>${emp.delivery}</td><td>${emp.fridge}</td><td>${emp.ac}</td><td>${emp.vehicle}</td>
+        <td>${dailyTotal}</td>
+        <td>
+        <button class="edit" onclick="editData(this)">Edit</button>
+        <button class="delete" onclick="deleteRow(this)">Delete</button>
+        </td>`;
+
+        let rank = top3Daily.findIndex(t=>t.eid===emp.eid && t.date===emp.date);
+        if(rank===0) row.className='top1';
+        else if(rank===1) row.className='top2';
+        else if(rank===2) row.className='top3';
+    });
+
+    document.getElementById("dailyGrandFridge").innerText = grandFr;
+    document.getElementById("dailyGrandAC").innerText = grandAc;
+    document.getElementById("dailyGrandVehicle").innerText = grandVeh;
+    document.getElementById("dailyGrandTotal").innerText = grandTotal;
+}
+
+function populateSummary(data){
+    let summary = {};
+    data.forEach(e=>{
+        if(!summary[e.eid]) summary[e.eid]={name:e.name,fridge:0,ac:0,vehicle:0};
+        summary[e.eid].fridge += e.fridge;
+        summary[e.eid].ac += e.ac;
+        summary[e.eid].vehicle += e.vehicle;
+    });
+
+    let tbody=document.getElementById("summaryBody");
+    tbody.innerHTML="";
+    let i=1, grandFr=0, grandAc=0, grandVeh=0, grandMonthly=0;
+    let totalArr=[];
+    for(let key in summary){
+        let s=summary[key];
+        let monthlyTotal = s.fridge + s.ac + s.vehicle;
+        let row = tbody.insertRow();
+        row.innerHTML=`<td>${i++}</td><td>${key}</td><td>${s.name}</td>
+        <td>${s.fridge}</td><td>${s.ac}</td><td>${s.vehicle}</td><td>${monthlyTotal}</td>`;
+        grandFr += s.fridge;
+        grandAc += s.ac;
+        grandVeh += s.vehicle;
+        grandMonthly += monthlyTotal;
+        totalArr.push({eid:key,name:s.name,fridge:s.fridge,ac:s.ac,vehicle:s.vehicle,monthlyTotal});
+    }
+
+    document.getElementById("grandFridge").innerText = grandFr;
+    document.getElementById("grandAC").innerText = grandAc;
+    document.getElementById("grandVehicle").innerText = grandVeh;
+    document.getElementById("grandMonthly").innerText = grandMonthly;
+
+    populateTop3(totalArr);
+}
+
+function populateTop3(totalArr){
+    totalArr.sort((a,b)=>b.monthlyTotal - a.monthlyTotal);
+    let top3Body=document.getElementById("top3Body");
+    top3Body.innerHTML="";
+    for(let i=0;i<Math.min(3,totalArr.length);i++){
+        let t=totalArr[i];
+        let row=top3Body.insertRow();
+        row.className = i===0 ? 'top1' : i===1 ? 'top2' : 'top3';
+        row.innerHTML=`<td>${i+1}</td><td>${t.eid}</td><td>${t.name}</td>
+        <td>${t.fridge}</td><td>${t.ac}</td><td>${t.vehicle}</td><td>${t.monthlyTotal}</td>`;
+    }
+}
+
+function editData(btn){
+    editRow = btn.parentNode.parentNode;
+    document.getElementById("dateInput").value = editRow.cells[1].innerText;
+    document.getElementById("shift").value = editRow.cells[2].innerText;
+    document.getElementById("eid").value = editRow.cells[3].innerText;
+    document.getElementById("name").value = editRow.cells[4].innerText;
+    document.getElementById("desig").value = editRow.cells[5].innerText;
+    document.getElementById("delivery").value = editRow.cells[6].innerText;
+    document.getElementById("fridge").value = editRow.cells[7].innerText;
+    document.getElementById("ac").value = editRow.cells[8].innerText;
+    document.getElementById("vehicle").value = editRow.cells[9].innerText;
+}
+
+function deleteRow(btn){
+    if(confirm("Delete this row?")){
+        let index = btn.parentNode.parentNode.dataset.index;
+        employees.splice(index,1);
+        localStorage.setItem("employeeData",JSON.stringify(employees));
+        refreshTables(employees);
+    }
+}
+
+function applyFilter(){
+    let start=document.getElementById("startDate").value;
+    let end=document.getElementById("endDate").value;
+    let shiftFilter=document.getElementById("filterShift").value;
+    let monthFilter=document.getElementById("filterMonth").value;
+
+    let filtered = employees.filter(e=>{
+        let keep=true;
+        if(start && end) keep = e.date>=start && e.date<=end;
+        if(shiftFilter!=="All") keep = keep && e.shift===shiftFilter;
+        if(monthFilter!=="All") keep = keep && new Date(e.date).getMonth()+1 == monthFilter;
+        return keep;
+    });
+
+    refreshTables(filtered);
+}
+
+function clearFilter(){
+    document.getElementById("startDate").value="";
+    document.getElementById("endDate").value="";
+    document.getElementById("filterShift").value="All";
+    document.getElementById("filterMonth").value="All";
+    refreshTables(employees);
+}
+
+function exportExcel(){
+    let tables=[document.getElementById("dailyTable"),document.getElementById("summaryTable"),document.getElementById("top3Table")];
+    let html=tables.map(t=>t.outerHTML).join("<br><br>");
+    let blob=new Blob([html],{type:"application/vnd.ms-excel"});
+    let link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download="Employee_Report.xls";
+    link.click();
+}
+</script>
+
+</body>
+</html>
